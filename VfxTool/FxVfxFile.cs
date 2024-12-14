@@ -28,9 +28,10 @@ namespace VfxTool
 
         public ushort nodeCount;
         private ushort edgeCount;
-        public ushort unknown1;
+        private ushort variationCount;
         public readonly IList<FxVfxNode> nodes = new List<FxVfxNode>();
         public readonly IList<FxModuleEdge> edges = new List<FxModuleEdge>();
+        public readonly IList<FxVariation> variations = new List<FxVariation>();
         public readonly IDictionary<ulong, FxVfxNodeDefinition> tppDefinitions;
         public readonly IDictionary<ulong, FxVfxNodeDefinition> gzDefinitions;
         private string filename;
@@ -62,7 +63,7 @@ namespace VfxTool
             this.version = (Version)reader.ReadUInt16();
             this.nodeCount = reader.ReadUInt16();
             this.edgeCount = reader.ReadUInt16();
-            this.unknown1 = reader.ReadUInt16();
+            this.variationCount = reader.ReadUInt16();
 
             var nodeIndexSize = this.GetNodeIndexSize();
 
@@ -72,11 +73,6 @@ namespace VfxTool
                 Console.WriteLine($"Version: {this.version}");
                 Console.WriteLine($"Node count: {this.nodeCount}");
                 Console.WriteLine($"Edge count: {this.edgeCount}");
-
-                if (this.unknown1 != 0)
-                {
-                    Console.WriteLine($"Unknown flag detected ({this.unknown1}). May have unexpected output.");
-                }
             }
 
             reader.BaseStream.Position += 4;
@@ -91,6 +87,11 @@ namespace VfxTool
             for (var i = 0; i < edgeCount; i++)
             {
                 ReadEdge(reader, nodeIndexSize);
+            }
+
+            for (var i = 0; i < variationCount; i++)
+            {
+                ReadVariation(reader);
             }
 
             return true;
@@ -128,7 +129,7 @@ namespace VfxTool
             writer.Write((ushort)this.nodes.Count);
             writer.Write((ushort)this.edges.Count);
 
-            writer.Write(unknown1);
+            writer.Write((ushort)this.variations.Count);
             writer.Write(0);
 
             foreach (var node in this.nodes)
@@ -136,9 +137,16 @@ namespace VfxTool
                 node.Write(writer);
             }
 
+            var nodeIndexSize = this.GetNodeIndexSize();
+
             foreach (var edge in this.edges)
             {
-                edge.Write(writer);
+                edge.Write(writer, nodeIndexSize);
+            }
+
+            foreach (var variation in this.variations)
+            {
+                variation.Write(writer);
             }
         }
 
@@ -176,6 +184,12 @@ namespace VfxTool
             edges.Add(edge);
         }
 
+        private void ReadVariation(BinaryReader reader)
+        {
+            var variation = FxVariation.Read(reader);
+            variations.Add(variation);
+        }
+
         public XmlSchema GetSchema()
         {
             return null;
@@ -202,9 +216,6 @@ namespace VfxTool
                 return false;
             }
 
-            reader.MoveToAttribute("unknown1");
-            this.unknown1 = ushort.Parse(reader.Value);
-
             reader.ReadStartElement("vfx");
             reader.ReadStartElement("nodes");
 
@@ -230,6 +241,8 @@ namespace VfxTool
                 this.nodes.Add(node);
             }
 
+            this.nodeCount = (ushort)this.nodes.Count;
+
             reader.ReadEndElement();
             reader.ReadStartElement("edges");
             while (reader.NodeType == XmlNodeType.Element)
@@ -237,6 +250,17 @@ namespace VfxTool
                 var edge = new FxModuleEdge();
                 edge.ReadXml(reader);
                 this.edges.Add(edge);
+            }
+
+            this.edgeCount = (ushort)this.edges.Count;
+
+            reader.ReadEndElement();
+            reader.ReadStartElement("variations");
+            while (reader.NodeType == XmlNodeType.Element)
+            {
+                var variation = new FxVariation();
+                variation.ReadXml(reader);
+                this.variations.Add(variation);
             }
 
             return true;
@@ -254,7 +278,6 @@ namespace VfxTool
             }
 
             writer.WriteAttributeString("version", versionString);
-            writer.WriteAttributeString("unknown1", unknown1.ToString());
 
             writer.WriteStartElement("nodes");
             foreach (var node in nodes)
@@ -276,6 +299,15 @@ namespace VfxTool
 
             writer.WriteEndElement();
 
+            writer.WriteStartElement("variations");
+            foreach (var variation in variations)
+            {
+                writer.WriteStartElement("variation");
+                variation.WriteXml(writer);
+                writer.WriteEndElement();
+            }
+
+            writer.WriteEndElement();
             writer.WriteEndDocument();
         }
     }
