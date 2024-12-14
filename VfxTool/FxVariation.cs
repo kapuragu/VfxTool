@@ -51,14 +51,15 @@ namespace VfxTool
         public void ReadXml(XmlReader reader)
         {
             var nameString = reader.GetAttribute(nameof(name));
+            reader.ReadStartElement("variation");
             this.name = uint.TryParse(nameString, out this.name) ? this.name : (uint)Program.HashString(nameString);
-            reader.ReadStartElement("variationNodes");
             this.nodesA = new List<ushort>();
             this.nodesB = new List<ushort>();
             while (reader.NodeType == XmlNodeType.Element)
             {
                 nodesA.Add(ushort.Parse(reader["targetNode"]));
                 nodesB.Add(ushort.Parse(reader["newNode"]));
+
                 reader.Read();
             }
             reader.ReadEndElement();
