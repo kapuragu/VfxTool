@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Xml;
 using System.Xml.Schema;
-using System.Xml.Serialization;
 using static VfxTool.FxModuleEdge;
 using static VfxTool.FxVfxNode;
 
@@ -99,7 +98,7 @@ namespace VfxTool
 
         private NodeIndexSize GetNodeIndexSize()
         {
-            if (this.nodeCount > byte.MaxValue)
+            if (this.nodeCount >= byte.MaxValue)
             {
                 return NodeIndexSize.UInt16;
             }

@@ -1,5 +1,4 @@
-﻿using LbaTool;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -248,6 +247,13 @@ namespace VfxTool
 
                 var propertyDefinition = propertyDefinitions[name];
                 var property = this.properties[name];
+
+                if (reader.IsEmptyElement)
+                {
+                    reader.Read();
+                    continue;
+                }
+
                 reader.ReadStartElement("property");
 
                 while (reader.NodeType == XmlNodeType.Element)
@@ -268,6 +274,12 @@ namespace VfxTool
                     else
                     {
                         val = reader.ReadElementContentAsObject();
+                        // GZ string hack since the encrypted paths contain invalid XML characters - base 64 encode them
+                        if (val is string && (val as string).StartsWith("/as/"))
+                        {
+                            var strVal = val as string;
+                            val = Program.Debasen64(strVal);
+                        }
                     }
 
                     property.Add(val);
@@ -316,12 +328,7 @@ namespace VfxTool
                 if (val is string && (val as string).StartsWith("/as/"))
                 {
                     var strVal = val as string;
-                    var extension = strVal.Substring(strVal.LastIndexOf('.'));
-                    var path = strVal.Substring(4, strVal.Length - extension.Length - 4);
-                    var bytes = System.Text.Encoding.UTF8.GetBytes(path);
-                    var base64 = Convert.ToBase64String(bytes);
-
-                    val = $"/as/{base64}{extension}";
+                    val=Program.Enbasen64(strVal);
                 }
 
                 writer.WriteValue(val);

@@ -24,6 +24,14 @@
     {
       "name": "lodDistance",
       "type": "float"
+    },
+    {
+      "name": "4076737128",
+      "type": "uint32"
+    },
+    {
+      "name": "522692237",
+      "type": "uint32"
     }
   ],
   "inputPorts": [

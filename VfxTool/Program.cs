@@ -1,6 +1,5 @@
 ﻿using Newtonsoft.Json;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -146,6 +145,25 @@ namespace VfxTool
             const ulong seed0 = 0x9ae16a3b2f90404f;
             ulong seed1 = text.Length > 0 ? (uint)((text[0]) << 16) + (uint)text.Length : 0;
             return CityHash.CityHash.CityHash64WithSeeds(text + "\0", seed0, seed1) & 0xFFFFFFFFFFFF;
+        }
+
+        public static string Enbasen64(string strVal)
+        {
+            // GZ string hack since the encrypted paths contain invalid XML characters - base 64 encode them
+            var extension = strVal.Substring(strVal.LastIndexOf('.'));
+            var path = strVal.Substring(4, strVal.Length - extension.Length - 4);
+            var bytes = System.Text.Encoding.UTF8.GetBytes(path);
+            var base64 = Convert.ToBase64String(bytes);
+
+            return $"/as/{base64}{extension}";
+        }
+        public static string Debasen64(string strVal)
+        {
+            var extension = strVal.Substring(strVal.LastIndexOf('.'));
+            var path = strVal.Substring(4, strVal.Length - extension.Length - 4);
+            var base64 = Convert.FromBase64String(path);
+            var bytes = System.Text.Encoding.UTF8.GetString(base64);
+            return $"/as/{bytes}{extension}";
         }
     }
 }
