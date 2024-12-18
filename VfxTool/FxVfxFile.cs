@@ -48,7 +48,7 @@ namespace VfxTool
             this.gzDefinitions = gzDefinitions;
         }
 
-        public bool Read(BinaryReader reader, string filename)
+        public bool Read(BinaryReader reader, string filename, Dictionary<ulong, string> pathDictionary, Dictionary<ulong, string> strDictionary)
         {
             this.filename = filename;
 
@@ -63,6 +63,7 @@ namespace VfxTool
             this.nodeCount = reader.ReadUInt16();
             this.edgeCount = reader.ReadUInt16();
             this.variationCount = reader.ReadUInt16();
+            var unknown = reader.ReadUInt32();
 
             var nodeIndexSize = this.GetNodeIndexSize();
 
@@ -72,12 +73,13 @@ namespace VfxTool
                 Console.WriteLine($"Version: {this.version}");
                 Console.WriteLine($"Node count: {this.nodeCount}");
                 Console.WriteLine($"Edge count: {this.edgeCount}");
+                Console.WriteLine($"Variation count: {this.variationCount}");
+                Console.WriteLine($"Unknown: {unknown}");
             }
 
-            reader.BaseStream.Position += 4;
             for (var i = 0; i < nodeCount; i++)
             {
-                if (!TryReadNode(reader, i, this.Definitions))
+                if (!TryReadNode(reader, i, this.Definitions, pathDictionary, strDictionary))
                 {
                     return false;
                 }
@@ -149,7 +151,7 @@ namespace VfxTool
             }
         }
 
-        private bool TryReadNode(BinaryReader reader, int index, IDictionary<ulong, FxVfxNodeDefinition> definitions)
+        private bool TryReadNode(BinaryReader reader, int index, IDictionary<ulong, FxVfxNodeDefinition> definitions, Dictionary<ulong, string> pathDictionary, Dictionary<ulong, string> strDictionary)
         {
             var hash = reader.ReadUInt64();
             if (!definitions.ContainsKey(hash))
@@ -167,7 +169,7 @@ namespace VfxTool
                 Console.WriteLine("---");
             }
 
-            var node = FxVfxNode.Read(reader, definition, this.GetStringType());
+            var node = FxVfxNode.Read(reader, definition, this.GetStringType(), pathDictionary, strDictionary);
             if (Program.IsVerbose)
             {
                 Console.WriteLine($"Finished {definition.name} at {reader.BaseStream.Position}");

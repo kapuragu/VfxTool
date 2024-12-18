@@ -11,7 +11,7 @@
     },
     {
       "name": "2802200992",
-      "type": "uint64"
+      "type": "StrCode"
     },
     {
       "name": "lensFlareName",

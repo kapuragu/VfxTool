@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -39,7 +40,7 @@ namespace VfxTool
             return node;
         }
 
-        public static FxVfxNode Read(BinaryReader reader, FxVfxNodeDefinition definition, StringType stringType)
+        public static FxVfxNode Read(BinaryReader reader, FxVfxNodeDefinition definition, StringType stringType, Dictionary<ulong, string> pathDictionary, Dictionary<ulong, string> strDictionary)
         {
             var node = new FxVfxNode
             {
@@ -59,7 +60,7 @@ namespace VfxTool
 
                 for(var i = 0; i < arraySize; i++)
                 {
-                    values.Add(ReadValue(reader, property.type, stringType));
+                    values.Add(ReadValue(reader, property.type, stringType, pathDictionary, strDictionary));
                 }
             }
 
@@ -149,12 +150,16 @@ namespace VfxTool
 
                     writer.Write((byte)0);
                     return;
+                case "StrCode":
+                case "PathCode64Ext":
+                    writer.Write(ulong.Parse(str));
+                    return;
                 default:
                     throw new FormatException($"Unknown property type {type}");
             }
         }
 
-        private static object ReadValue(BinaryReader reader, string type, StringType stringType)
+        private static object ReadValue(BinaryReader reader, string type, StringType stringType, Dictionary<ulong, string> pathDictionary, Dictionary<ulong, string> strDictionary)
         {
             switch(type)
             {
@@ -217,6 +222,12 @@ namespace VfxTool
                     }
 
                     return str;
+                case "StrCode":
+                    ulong strCodeHash = reader.ReadUInt64();
+                    return strDictionary.TryGetValue(strCodeHash, out string strCodeValue) ? strCodeValue : strCodeHash.ToString();
+                case "PathCode64Ext":
+                    ulong pathCode64ExtHash = reader.ReadUInt64();
+                    return pathDictionary.TryGetValue(pathCode64ExtHash, out string pathCode64ExtValue) ? pathCode64ExtValue : pathCode64ExtHash.ToString();
                 default:
                     throw new FormatException($"Unknown property type {type}");
             }
@@ -270,6 +281,23 @@ namespace VfxTool
                         val = new Vector4();
                         (val as Vector4)?.ReadXml(reader);
                         reader.Read();
+                    }
+                    else if (propertyDefinition.type=="StrCode")
+                    {
+                        val = reader.ReadElementContentAsObject();
+
+                        if (ulong.TryParse(val as string, out ulong ulongVal))
+                            val = ulongVal.ToString();
+                        else
+                            val = Extensions.StrCode64(val as string).ToString();
+                    }
+                    else if (propertyDefinition.type == "PathCode64Ext")
+                    {
+                        val = reader.ReadElementContentAsObject();
+                        if (ulong.TryParse(val as string, out ulong ulongVal))
+                            val = ulongVal.ToString();
+                        else
+                            val = Extensions.HashFileNameWithExtension(val as string).ToString();
                     }
                     else
                     {
