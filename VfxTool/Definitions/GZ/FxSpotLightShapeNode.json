@@ -14,7 +14,7 @@
       "type": "uint32"
     },
     {
-      "name": "castShadow",
+      "name": "enable",
       "type": "bool"
     },
     {
@@ -22,7 +22,7 @@
       "type": "float"
     },
     {
-      "name": "enable",
+      "name": "castShadow",
       "type": "bool"
     },
     {

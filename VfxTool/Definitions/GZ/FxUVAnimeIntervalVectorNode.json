@@ -18,11 +18,11 @@
       "type": "uint32"
     },
     {
-      "name": "2930636785",
+      "name": "randomFlipU",
       "type": "bool"
     },
     {
-      "name": "2418712811",
+      "name": "randomFlipV",
       "type": "bool"
     },
     {
